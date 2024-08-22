@@ -1,11 +1,19 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import LetterBox from "./Letter";
+import { words } from "../data/words";
 
 const Wordle = () => {
 	const [guesses, setGuesses] = useState(Array(6).fill(""));
 	const [currentGuess, setCurrentGuess] = useState("");
-	const [correctWord] = useState("CRANE");
+	const [correctWord, setCorrectWord] = useState("");
+	const [showPopup, setShowPopup] = useState(false);
+	const [hintIndex, setHintIndex] = useState(0); // Tracks which letter to reveal next
+
+	useEffect(() => {
+		const randomWord = words[Math.floor(Math.random() * words.length)];
+		setCorrectWord(randomWord);
+	}, []);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.value.length <= 5) {
@@ -21,6 +29,12 @@ const Wordle = () => {
 				newGuesses[firstEmptyIndex] = currentGuess;
 				setGuesses(newGuesses);
 				setCurrentGuess("");
+
+				if (currentGuess === correctWord) {
+					setTimeout(() => {
+						setShowPopup(true);
+					}, 500);
+				}
 			}
 		}
 	};
@@ -29,6 +43,24 @@ const Wordle = () => {
 		if (correctWord[index] === letter) return "correct";
 		else if (correctWord.includes(letter)) return "middle";
 		else return "wrong";
+	};
+
+	const handleHint = () => {
+		while (
+			hintIndex < correctWord.length &&
+			currentGuess.includes(correctWord[hintIndex])
+		) {
+			setHintIndex(hintIndex + 1); // Skip letters already guessed correctly
+		}
+		if (hintIndex < correctWord.length) {
+			setCurrentGuess(
+				(prev) =>
+					prev.substring(0, hintIndex) +
+					correctWord[hintIndex] +
+					prev.substring(hintIndex + 1)
+			);
+			setHintIndex(hintIndex + 1);
+		}
 	};
 
 	return (
@@ -63,7 +95,28 @@ const Wordle = () => {
 				>
 					Submit
 				</button>
+				<button
+					onClick={handleHint}
+					className="ml-2 bg-neutral-700 text-white px-4 py-[10px]"
+				>
+					Hint
+				</button>
 			</div>
+
+			{showPopup && (
+				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+					<div className="bg-neutral-800 p-4 rounded shadow-[1rem] w-[40vw] px-8 py-8">
+						<h2 className="text-xl font-bold">Congratulations!</h2>
+						<p>You guessed the word correctly!</p>
+						<button
+							className="mt-4 bg-neutral-700 text-white px-4 py-2 w-full"
+							onClick={() => setShowPopup(false)}
+						>
+							Close
+						</button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };
